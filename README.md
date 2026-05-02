@@ -1,49 +1,49 @@
 # NodeGet Docker Compose
 
-Single-domain Docker Compose deployment for NodeGet.
+NodeGet 单域名 Docker Compose 部署方案。
 
-Routes:
+路由：
 
-- `/` serves NodeGet-StatusShow
-- `/board/` serves NodeGet-board
-- `/ws` proxies NodeGet Server WebSocket JSON-RPC
+- `/` 提供 NodeGet-StatusShow 状态页
+- `/board/` 提供 NodeGet-board 控制台
+- `/ws` 反代 NodeGet Server WebSocket JSON-RPC
 
-The stack uses Caddy for automatic HTTPS, Postgres for storage, and the official NodeGet server image.
+本方案使用 Caddy 自动 HTTPS、Postgres 存储，以及官方 NodeGet Server 镜像。
 
-## Requirements
+## 环境要求
 
-- Docker with Compose support
-- A domain name pointed to this server
-- Inbound ports `80` and `443` open
+- 已安装 Docker 和 Docker Compose
+- 一个已经解析到本服务器的域名
+- 服务器开放入站 `80` 和 `443` 端口
 
-## Quick Start
+## 快速开始
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Compose/main/scripts/install.sh)
 ```
 
-Choose `1. Install / first deploy`, then enter:
+选择 `1. 安装 / 首次部署`，然后按提示输入：
 
-- your domain
-- status page name
-- ACME email
-- Postgres password, or accept the generated one
+- 域名
+- 状态页名称
+- ACME 邮箱
+- Postgres 密码，也可以直接使用脚本生成的默认值
 
-The installer clones this repository to `/opt/nodeget-compose`, writes `.env`, starts Docker Compose, and prints the SuperToken when it appears in the server logs.
+安装脚本会把本仓库克隆到 `/opt/nodeget-compose`，写入 `.env`，启动 Docker Compose，并在服务日志出现 SuperToken 后直接输出。
 
-After the stack starts:
+启动完成后：
 
-1. Open `https://YOUR_DOMAIN/board/`.
-2. Log in with the SuperToken printed by the installer.
-3. Add the backend URL `wss://YOUR_DOMAIN/ws` in the board.
-4. Create a public/read-only token for StatusShow.
-5. Run the installer again and choose `2. Paste StatusShow token and update`.
+1. 打开 `https://你的域名/board/`。
+2. 使用安装脚本输出的 SuperToken 登录。
+3. 在控制台里添加后端地址 `wss://你的域名/ws`。
+4. 手动创建一个 StatusShow 可用的公开只读 Token。
+5. 再次运行安装脚本，选择 `2. 粘贴 StatusShow Token 并更新`。
 
-Then open `https://YOUR_DOMAIN/`.
+然后打开 `https://你的域名/` 查看状态页。
 
-## Manual Start
+## 手动启动
 
-If you do not want to use the menu installer:
+如果不想使用菜单安装器，也可以手动启动：
 
 ```bash
 git clone https://github.com/eeviriyi/NodeGet-Docker-Compose.git
@@ -53,7 +53,7 @@ nano .env
 ./scripts/up.sh
 ```
 
-Before starting manually, set at least:
+手动启动前，至少需要配置：
 
 ```env
 DOMAIN=nodeget.example.com
@@ -62,30 +62,30 @@ POSTGRES_PASSWORD=change-this-password
 STATUS_BACKEND_URL=wss://nodeget.example.com/ws
 ```
 
-## DNS
+## DNS 解析
 
-Create an `A` record at your DNS provider:
+在你的 DNS 服务商处添加 `A` 记录：
 
 ```text
 nodeget.example.com -> your server IPv4
 ```
 
-Create an `AAAA` record too if you use IPv6.
+如果使用 IPv6，也可以添加 `AAAA` 记录。
 
 ## HTTPS
 
-Caddy automatically requests and renews Let's Encrypt certificates. The domain must already resolve to this server, and ports `80` and `443` must be reachable from the public internet.
+Caddy 会自动申请和续期 Let's Encrypt 证书。域名必须已经解析到本服务器，并且公网可以访问服务器的 `80` 和 `443` 端口。
 
-## Images
+## 镜像来源
 
-- NodeGet Server: `genshinmc/nodeget:latest`
-- Postgres: `postgres:17-alpine`
-- Caddy: `caddy:2-alpine`
-- Board and StatusShow are built from the configured Git repositories.
+- NodeGet Server：`genshinmc/nodeget:latest`
+- Postgres：`postgres:17-alpine`
+- Caddy：`caddy:2-alpine`
+- Board 和 StatusShow 会从配置的 Git 仓库构建镜像
 
-For production, pin versions in `.env` instead of using `latest`.
+生产环境建议在 `.env` 中固定版本，不要长期使用 `latest`。
 
-## Common Commands
+## 常用命令
 
 ```bash
 docker compose ps
