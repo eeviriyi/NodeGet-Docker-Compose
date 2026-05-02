@@ -145,7 +145,7 @@ show_next_steps() {
   echo "NodeGet Docker Compose 已开始启动。"
   echo
   echo "访问地址："
-  echo "  状态页：    https://${domain}/"
+  echo "  探针页：    https://${domain}/"
   echo "  控制台：    https://${domain}/board/"
   echo "  WebSocket： wss://${domain}/ws"
   echo
@@ -160,8 +160,9 @@ show_next_steps() {
     echo "  暂时还没出现在日志里。等 nodeget-server 启动完成后，可运行菜单 5 查看。"
   fi
   echo
-  echo "登录 /board/ 后，请手动创建一个 StatusShow 可用的公开只读 Token。"
-  echo "然后再次运行本脚本，选择菜单 2，粘贴这个 Token 并更新状态页。"
+  echo "登录 /board/ 后，请手动创建一个探针页专用只读 Token。"
+  echo "注意：不要把 SuperToken 填到探针页里。"
+  echo "然后再次运行本脚本，选择菜单 2，粘贴这个 Token 并更新探针页。"
 }
 
 install_stack() {
@@ -170,7 +171,7 @@ install_stack() {
 
   default_domain="${DOMAIN:-nodeget.example.com}"
   domain="$(prompt '请输入域名' "$default_domain")"
-  site_name="$(prompt '请输入状态页名称' 'NodeGet Status')"
+  site_name="$(prompt '请输入探针页名称' 'NodeGet Status')"
   email="$(prompt '请输入 ACME 邮箱' "admin@${domain}")"
   default_password="$(generate_password)"
   postgres_password="$(prompt '请输入 Postgres 密码' "$default_password")"
@@ -215,7 +216,7 @@ configure_status_token() {
     return
   fi
 
-  printf '请粘贴 StatusShow 可用的公开只读 Token: '
+  printf '请粘贴探针页专用只读 Token（不要粘贴 SuperToken）: '
   read -r token
   if [ -z "$token" ]; then
     echo "Token 为空，未做任何修改。"
@@ -226,7 +227,7 @@ configure_status_token() {
   cd "$INSTALL_DIR"
   ./scripts/render-status-config.sh
   compose_cmd restart nodeget-statusshow
-  echo "StatusShow Token 已更新。"
+  echo "探针页访问 Token 已更新。"
 }
 
 update_stack() {
@@ -307,7 +308,7 @@ menu() {
     echo "NodeGet Docker Compose 管理菜单"
     echo
     echo "1. 安装 / 首次部署"
-    echo "2. 粘贴 StatusShow Token 并更新"
+    echo "2. 配置探针页访问 Token"
     echo "3. 更新部署"
     echo "4. 查看状态"
     echo "5. 查看 SuperToken"

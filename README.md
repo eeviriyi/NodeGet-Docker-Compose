@@ -4,7 +4,7 @@ NodeGet 单域名 Docker Compose 部署方案。
 
 路由：
 
-- `/` 提供 NodeGet-StatusShow 状态页
+- `/` 提供探针页
 - `/board/` 提供 NodeGet-board 控制台
 - `/ws` 反代 NodeGet Server WebSocket JSON-RPC
 
@@ -25,7 +25,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Comp
 选择 `1. 安装 / 首次部署`，然后按提示输入：
 
 - 域名
-- 状态页名称
+- 探针页名称
 - ACME 邮箱
 - Postgres 密码，也可以直接使用脚本生成的默认值
 
@@ -36,10 +36,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Comp
 1. 打开 `https://你的域名/board/`。
 2. 使用安装脚本输出的 SuperToken 登录。
 3. 在控制台里添加后端地址 `wss://你的域名/ws`。
-4. 手动创建一个 StatusShow 可用的公开只读 Token。
-5. 再次运行安装脚本，选择 `2. 粘贴 StatusShow Token 并更新`。
+4. 手动创建一个探针页专用只读 Token。不要使用 SuperToken。
+5. 再次运行安装脚本，选择 `2. 配置探针页访问 Token`。
 
-然后打开 `https://你的域名/` 查看状态页。
+然后打开 `https://你的域名/` 查看探针页。
 
 ## 手动启动
 
