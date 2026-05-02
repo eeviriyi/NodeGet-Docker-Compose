@@ -19,6 +19,33 @@ The stack uses Caddy for automatic HTTPS, Postgres for storage, and the official
 ## Quick Start
 
 ```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Compose/main/scripts/install.sh)
+```
+
+Choose `1. Install / first deploy`, then enter:
+
+- your domain
+- status page name
+- ACME email
+- Postgres password, or accept the generated one
+
+The installer clones this repository to `/opt/nodeget-compose`, writes `.env`, starts Docker Compose, and prints the SuperToken when it appears in the server logs.
+
+After the stack starts:
+
+1. Open `https://YOUR_DOMAIN/board/`.
+2. Log in with the SuperToken printed by the installer.
+3. Add the backend URL `wss://YOUR_DOMAIN/ws` in the board.
+4. Create a public/read-only token for StatusShow.
+5. Run the installer again and choose `2. Paste StatusShow token and update`.
+
+Then open `https://YOUR_DOMAIN/`.
+
+## Manual Start
+
+If you do not want to use the menu installer:
+
+```bash
 git clone https://github.com/eeviriyi/NodeGet-Docker-Compose.git
 cd NodeGet-Docker-Compose
 cp .env.example .env
@@ -26,7 +53,7 @@ nano .env
 ./scripts/up.sh
 ```
 
-Before starting, set at least:
+Before starting manually, set at least:
 
 ```env
 DOMAIN=nodeget.example.com
@@ -34,22 +61,6 @@ ACME_EMAIL=admin@example.com
 POSTGRES_PASSWORD=change-this-password
 STATUS_BACKEND_URL=wss://nodeget.example.com/ws
 ```
-
-After the stack starts:
-
-1. Open `https://YOUR_DOMAIN/board/`.
-2. Get the NodeGet SuperToken from `docker compose logs nodeget-server` or the generated server config.
-3. Add the backend URL `wss://YOUR_DOMAIN/ws` in the board.
-4. Create a public/read-only token for StatusShow.
-5. Put that token in `.env` as `STATUS_TOKEN`.
-6. Run:
-
-```bash
-./scripts/render-status-config.sh
-docker compose restart nodeget-statusshow
-```
-
-Then open `https://YOUR_DOMAIN/`.
 
 ## DNS
 
@@ -83,4 +94,3 @@ docker compose logs -f caddy
 docker compose pull
 docker compose up -d --build
 ```
-
