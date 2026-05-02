@@ -36,8 +36,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Comp
 1. 打开 `https://你的域名/board/`。
 2. 使用安装脚本输出的 SuperToken 登录。
 3. 在控制台里添加后端地址 `wss://你的域名/ws`。
-4. 手动创建一个探针页专用只读 Token。不要使用 SuperToken。
-5. 再次运行安装脚本，选择 `2. 配置探针页访问 Token`。
+4. 脚本会自动创建探针页专用只读 Token，并写入探针页配置。
+5. 如果探针页暂时不能读取数据，再次运行安装脚本，选择 `2. 自动生成/更新探针页访问 Token`。
 
 然后打开 `https://你的域名/` 查看探针页。
 

@@ -153,16 +153,15 @@ show_next_steps() {
   echo "  请确认 ${domain} 已解析到本服务器，并且 80/443 端口已开放。"
   echo
   echo "SuperToken:"
-  token="$(cd "$INSTALL_DIR" && compose_cmd logs nodeget-server 2>/dev/null | grep 'Super Token:' | tail -1 | sed 's/.*Super Token: //')"
+  token="$(get_super_token)"
   if [ -n "$token" ]; then
     echo "  ${token}"
   else
     echo "  暂时还没出现在日志里。等 nodeget-server 启动完成后，可运行菜单 5 查看。"
   fi
   echo
-  echo "登录 /board/ 后，请手动创建一个探针页专用只读 Token。"
-  echo "注意：不要把 SuperToken 填到探针页里。"
-  echo "然后再次运行本脚本，选择菜单 2，粘贴这个 Token 并更新探针页。"
+  echo "脚本会自动创建探针页专用只读 Token 并写入探针页配置。"
+  echo "如果探针页暂时不能读取数据，可稍后再次运行本脚本，选择菜单 2 重新生成。"
 }
 
 install_stack() {
@@ -193,6 +192,11 @@ install_stack() {
     sleep 2
   done
 
+  token="$(get_super_token)"
+  if [ -n "$token" ]; then
+    create_probe_token "$token" || true
+  fi
+
   show_next_steps "$domain"
 }
 
@@ -210,24 +214,115 @@ set_env_value() {
   mv "$tmp" "$file"
 }
 
+get_super_token() {
+  if [ ! -d "$INSTALL_DIR" ]; then
+    return 0
+  fi
+  cd "$INSTALL_DIR"
+  compose_cmd logs nodeget-server 2>/dev/null | grep 'Super Token:' | tail -1 | sed 's/.*Super Token: //' || true
+}
+
+create_probe_token() {
+  super_token="$1"
+  if [ -z "$super_token" ]; then
+    echo "未找到 SuperToken，无法自动创建探针页访问 Token。"
+    return 1
+  fi
+
+  echo "正在自动创建探针页专用只读 Token..."
+
+  created_token="$(
+    docker run --rm -i \
+      --network nodeget-stack_default \
+      -e FATHER_TOKEN="$super_token" \
+      node:22-alpine node <<'NODE'
+const fatherToken = process.env.FATHER_TOKEN
+const permissions = [
+  { static_monitoring: { read: 'cpu' } },
+  { static_monitoring: { read: 'system' } },
+  { static_monitoring: { read: 'gpu' } },
+  { dynamic_monitoring_summary: 'read' },
+  { node_get: 'list_all_agent_uuid' },
+  { kv: { read: 'metadata_*' } },
+  { task: { read: 'ping' } },
+  { task: { read: 'tcp_ping' } },
+]
+
+const request = {
+  jsonrpc: '2.0',
+  id: 'create-probe-token',
+  method: 'token_create',
+  params: {
+    father_token: fatherToken,
+    token_creation: {
+      username: `nodeget-probe-page-${Date.now()}`,
+      password: crypto.randomUUID(),
+      version: 1,
+      token_limit: [
+        {
+          scopes: [{ global: null }],
+          permissions,
+        },
+      ],
+    },
+  },
+}
+
+const ws = new WebSocket('ws://nodeget-server:2211/')
+const timeout = setTimeout(() => {
+  console.error('连接 NodeGet Server 超时')
+  process.exit(1)
+}, 15000)
+
+ws.addEventListener('open', () => ws.send(JSON.stringify(request)))
+ws.addEventListener('message', event => {
+  clearTimeout(timeout)
+  const response = JSON.parse(String(event.data))
+  if (response.error) {
+    console.error(response.error.message || JSON.stringify(response.error))
+    process.exit(1)
+  }
+  if (!response.result?.key || !response.result?.secret) {
+    console.error('token_create 没有返回 key/secret')
+    process.exit(1)
+  }
+  console.log(`${response.result.key}:${response.result.secret}`)
+  ws.close()
+})
+ws.addEventListener('error', () => {
+  clearTimeout(timeout)
+  console.error('连接 NodeGet Server 失败')
+  process.exit(1)
+})
+NODE
+  )"
+
+  if [ -z "$created_token" ]; then
+    echo "探针页访问 Token 创建失败。"
+    return 1
+  fi
+
+  set_env_value STATUS_TOKEN "$created_token"
+  cd "$INSTALL_DIR"
+  ./scripts/render-status-config.sh
+  compose_cmd restart nodeget-statusshow
+  echo "探针页专用只读 Token 已自动创建并写入配置。"
+}
+
 configure_status_token() {
   if [ ! -f "$INSTALL_DIR/.env" ]; then
     echo "未在 $INSTALL_DIR 找到已安装的部署。请先运行安装。"
     return
   fi
 
-  printf '请粘贴探针页专用只读 Token（不要粘贴 SuperToken）: '
-  read -r token
+  token="$(get_super_token)"
   if [ -z "$token" ]; then
-    echo "Token 为空，未做任何修改。"
+    echo "未能从 nodeget-server 日志中读取 SuperToken，无法自动生成。"
+    echo "请确认服务已启动，或用菜单 6 查看 nodeget-server 日志。"
     return
   fi
 
-  set_env_value STATUS_TOKEN "$token"
-  cd "$INSTALL_DIR"
-  ./scripts/render-status-config.sh
-  compose_cmd restart nodeget-statusshow
-  echo "探针页访问 Token 已更新。"
+  create_probe_token "$token"
 }
 
 update_stack() {
@@ -257,7 +352,10 @@ show_super_token() {
     return
   fi
   cd "$INSTALL_DIR"
-  compose_cmd logs nodeget-server | grep 'Super Token:' | tail -1 || true
+  token="$(get_super_token)"
+  if [ -n "$token" ]; then
+    echo "Super Token: ${token}"
+  fi
 }
 
 show_logs() {
@@ -308,7 +406,7 @@ menu() {
     echo "NodeGet Docker Compose 管理菜单"
     echo
     echo "1. 安装 / 首次部署"
-    echo "2. 配置探针页访问 Token"
+    echo "2. 自动生成/更新探针页访问 Token"
     echo "3. 更新部署"
     echo "4. 查看状态"
     echo "5. 查看 SuperToken"
