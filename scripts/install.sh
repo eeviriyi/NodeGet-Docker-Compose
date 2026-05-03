@@ -73,12 +73,14 @@ check_command() {
 }
 
 install_docker() {
-  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-    echo "Docker 和 Docker Compose 已安装。"
+  if command -v docker >/dev/null 2>&1 &&
+    docker compose version >/dev/null 2>&1 &&
+    docker buildx version >/dev/null 2>&1; then
+    echo "Docker、Docker Compose 和 Buildx 已安装。"
     return
   fi
 
-  echo "将使用 Docker 官方安装脚本安装 Docker Engine 和 Compose 插件。"
+  echo "将使用 Docker 官方安装脚本安装/修复 Docker Engine、Compose 插件和 Buildx。"
   echo "官方脚本地址：https://get.docker.com"
   printf '是否继续？输入 y 继续: '
   read -r confirm
@@ -99,6 +101,11 @@ install_docker() {
 
   run_as_root sh -c 'curl -fsSL https://get.docker.com | sh'
 
+  if command -v apt-get >/dev/null 2>&1; then
+    run_as_root apt-get update
+    run_as_root apt-get install -y docker-compose-plugin docker-buildx-plugin
+  fi
+
   if [ "$(id -u)" -ne 0 ]; then
     run_as_root usermod -aG docker "$(id -un)" || true
     echo "已尝试把当前用户加入 docker 用户组。可能需要重新登录 SSH 后才生效。"
@@ -110,6 +117,7 @@ install_docker() {
 
   docker --version || true
   docker compose version || true
+  docker buildx version || true
 }
 
 check_git() {
@@ -154,6 +162,14 @@ check_docker() {
     echo "未检测到 Docker Compose。"
     install_docker || {
       echo "请先安装 Docker Compose 插件。"
+      exit 1
+    }
+  fi
+
+  if ! docker buildx version >/dev/null 2>&1; then
+    echo "未检测到 Docker Buildx。"
+    install_docker || {
+      echo "请先安装 Docker Buildx 插件。"
       exit 1
     }
   fi

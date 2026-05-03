@@ -47,6 +47,12 @@ else
   fail "Docker Compose 不可用"
 fi
 
+if docker buildx version >/dev/null 2>&1; then
+  ok "Docker Buildx 可用：$(docker buildx version)"
+else
+  fail "Docker Buildx 不可用，构建 board/statusshow 镜像会失败"
+fi
+
 if docker info >/dev/null 2>&1; then
   ok "当前用户可以访问 Docker"
 else
