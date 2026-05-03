@@ -72,25 +72,90 @@ check_command() {
   fi
 }
 
+install_docker() {
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    echo "Docker 和 Docker Compose 已安装。"
+    return
+  fi
+
+  echo "将使用 Docker 官方安装脚本安装 Docker Engine 和 Compose 插件。"
+  echo "官方脚本地址：https://get.docker.com"
+  printf '是否继续？输入 y 继续: '
+  read -r confirm
+  if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+    echo "已取消 Docker 安装。"
+    return 1
+  fi
+
+  if ! command -v curl >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      run_as_root apt-get update
+      run_as_root apt-get install -y ca-certificates curl
+    else
+      echo "未检测到 curl，请先安装 curl 后重试。"
+      return 1
+    fi
+  fi
+
+  run_as_root sh -c 'curl -fsSL https://get.docker.com | sh'
+
+  if [ "$(id -u)" -ne 0 ]; then
+    run_as_root usermod -aG docker "$(id -un)" || true
+    echo "已尝试把当前用户加入 docker 用户组。可能需要重新登录 SSH 后才生效。"
+  fi
+
+  if command -v systemctl >/dev/null 2>&1; then
+    run_as_root systemctl enable --now docker || true
+  fi
+
+  docker --version || true
+  docker compose version || true
+}
+
+check_git() {
+  if ! command -v git >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      echo "未检测到 git，正在使用 apt 安装。"
+      run_as_root apt-get update
+      run_as_root apt-get install -y git ca-certificates curl
+    else
+      check_command git "请先安装 git，例如：apt install -y git"
+    fi
+  fi
+}
+
 check_docker() {
-  check_command git "请先安装 git，例如：apt install -y git"
+  check_git
 
   if ! command -v docker >/dev/null 2>&1; then
     echo "未检测到 Docker。"
-    echo "请先安装 Docker：https://docs.docker.com/engine/install/"
-    exit 1
+    install_docker || {
+      echo "请先安装 Docker：https://docs.docker.com/engine/install/"
+      exit 1
+    }
   fi
 
   if ! docker info >/dev/null 2>&1; then
     echo "Docker 已安装，但当前用户无法使用。"
-    echo "请尝试用 sudo 运行本脚本，或把当前用户加入 docker 用户组。"
-    exit 1
+    if [ "$(id -u)" -ne 0 ]; then
+      echo "请尝试用 sudo 运行本脚本，或重新登录 SSH 后再试。"
+      exit 1
+    fi
+    if command -v systemctl >/dev/null 2>&1; then
+      run_as_root systemctl enable --now docker || true
+    fi
+    if ! docker info >/dev/null 2>&1; then
+      echo "Docker 服务仍不可用，请检查：systemctl status docker"
+      exit 1
+    fi
   fi
 
   if ! docker compose version >/dev/null 2>&1 && ! command -v docker-compose >/dev/null 2>&1; then
     echo "未检测到 Docker Compose。"
-    echo "请先安装 Docker Compose 插件。"
-    exit 1
+    install_docker || {
+      echo "请先安装 Docker Compose 插件。"
+      exit 1
+    }
   fi
 }
 
@@ -182,11 +247,11 @@ show_next_steps() {
   if [ -n "$token" ]; then
     echo "  ${token}"
   else
-    echo "  暂时还没出现在日志里。等 nodeget-server 启动完成后，可运行菜单 5 查看。"
+    echo "  暂时还没出现在日志里。等 nodeget-server 启动完成后，可运行菜单 8 查看。"
   fi
   echo
   echo "脚本会自动创建探针页专用只读 Token 并写入探针页配置。"
-  echo "如果探针页暂时不能读取数据，可稍后再次运行本脚本，选择菜单 2 重新生成。"
+  echo "如果探针页暂时不能读取数据，可稍后再次运行本脚本，选择菜单 3 重新生成。"
 }
 
 install_stack() {
@@ -345,7 +410,7 @@ configure_status_token() {
   token="$(get_super_token)"
   if [ -z "$token" ]; then
     echo "未能从 nodeget-server 日志中读取 SuperToken，无法自动生成。"
-    echo "请确认服务已启动，或用菜单 6 查看 nodeget-server 日志。"
+    echo "请确认服务已启动，或用菜单 9 查看 nodeget-server 日志。"
     return
   fi
 
@@ -452,28 +517,30 @@ menu() {
     echo "NodeGet Docker Compose 管理菜单"
     echo
     echo "1. 安装 / 首次部署"
-    echo "2. 自动生成/更新探针页访问 Token"
-    echo "3. 更新部署"
-    echo "4. 重新生成配置并重启"
-    echo "5. 查看状态"
-    echo "6. 部署自检"
-    echo "7. 查看 SuperToken"
-    echo "8. 查看日志"
-    echo "9. 卸载"
+    echo "2. 安装 / 修复 Docker"
+    echo "3. 自动生成/更新探针页访问 Token"
+    echo "4. 更新部署"
+    echo "5. 重新生成配置并重启"
+    echo "6. 查看状态"
+    echo "7. 部署自检"
+    echo "8. 查看 SuperToken"
+    echo "9. 查看日志"
+    echo "10. 卸载"
     echo "0. 退出"
     echo
     printf '请选择: '
     read -r choice
     case "$choice" in
       1) install_stack; pause ;;
-      2) configure_status_token; pause ;;
-      3) update_stack; pause ;;
-      4) restart_stack; pause ;;
-      5) show_status; pause ;;
-      6) doctor_stack; pause ;;
-      7) show_super_token; pause ;;
-      8) show_logs ;;
-      9) uninstall_stack; pause ;;
+      2) install_docker; pause ;;
+      3) configure_status_token; pause ;;
+      4) update_stack; pause ;;
+      5) restart_stack; pause ;;
+      6) show_status; pause ;;
+      7) doctor_stack; pause ;;
+      8) show_super_token; pause ;;
+      9) show_logs ;;
+      10) uninstall_stack; pause ;;
       0) exit 0 ;;
       *) echo "无效选择" ;;
     esac

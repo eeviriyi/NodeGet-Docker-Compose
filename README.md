@@ -20,7 +20,7 @@ NodeGet 单域名 Docker Compose 部署方案，目标是让个人 VPS 可以用
 
 先准备一台干净 VPS：
 
-- 已安装 Docker 和 Docker Compose 插件
+- 已安装 Docker 和 Docker Compose 插件；如果没有，安装脚本可以自动安装
 - 域名已经添加 `A` 记录指向 VPS IPv4
 - 防火墙/安全组放行 `80` 和 `443`
 
@@ -37,6 +37,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Comp
 - ACME 邮箱
 - Postgres 密码，也可以直接使用脚本生成的默认值
 
+如果 VPS 没有 Docker，安装脚本会提示是否使用 Docker 官方脚本一键安装。也可以先在菜单里选择 `2. 安装 / 修复 Docker`。
+
 安装脚本会把本仓库克隆到 `/opt/nodeget-compose`，写入 `.env`，启动 Docker Compose，并在服务日志出现 SuperToken 后直接输出。
 
 启动完成后：
@@ -45,18 +47,19 @@ bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Comp
 2. 使用安装脚本输出的 SuperToken 登录。
 3. 在控制台里添加后端地址 `wss://你的域名/ws`。
 4. 脚本会自动创建探针页专用只读 Token，并写入探针页配置。
-5. 如果探针页暂时不能读取数据，再次运行安装脚本，选择 `2. 自动生成/更新探针页访问 Token`。
+5. 如果探针页暂时不能读取数据，再次运行安装脚本，选择 `3. 自动生成/更新探针页访问 Token`。
 
 然后打开 `https://你的域名/` 查看探针页。
 
 测试时常用菜单：
 
-- `2. 自动生成/更新探针页访问 Token`
-- `4. 重新生成配置并重启`
-- `5. 查看状态`
-- `6. 部署自检`
-- `7. 查看 SuperToken`
-- `8. 查看日志`
+- `2. 安装 / 修复 Docker`
+- `3. 自动生成/更新探针页访问 Token`
+- `5. 重新生成配置并重启`
+- `6. 查看状态`
+- `7. 部署自检`
+- `8. 查看 SuperToken`
+- `9. 查看日志`
 
 也可以在安装目录手动自检：
 
