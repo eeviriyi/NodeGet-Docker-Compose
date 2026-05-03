@@ -51,6 +51,14 @@ generate_password() {
   fi
 }
 
+base64_one_line() {
+  if base64 --help 2>/dev/null | grep -q -- '-w'; then
+    base64 -w 0
+  else
+    base64 | tr -d '\n'
+  fi
+}
+
 compose_cmd() {
   if docker compose version >/dev/null 2>&1; then
     docker compose "$@"
@@ -286,6 +294,15 @@ STATUS_TOKEN=
 EOF
 }
 
+load_env_value() {
+  key="$1"
+  file="$INSTALL_DIR/.env"
+  if [ ! -f "$file" ]; then
+    return 0
+  fi
+  sed -n "s/^${key}=//p" "$file" | tail -1 | sed 's/^"//;s/"$//'
+}
+
 show_next_steps() {
   domain="$1"
   echo
@@ -303,6 +320,11 @@ show_next_steps() {
   token="$(get_super_token)"
   if [ -n "$token" ]; then
     echo "  ${token}"
+    fill_json="{\"name\":\"${domain}\",\"url\":\"wss://${domain}/ws\",\"token\":\"${token}\"}"
+    fill="$(printf '%s' "$fill_json" | base64_one_line)"
+    echo
+    echo "快速添加控制台后端："
+    echo "  https://${domain}/board/#/dashboard/node-manage?tab=servers&fill=${fill}"
   else
     echo "  暂时还没出现在日志里。等 nodeget-server 启动完成后，可运行菜单 8 查看。"
   fi
@@ -315,17 +337,47 @@ install_stack() {
   check_docker
   check_ports
 
+  existing_env=0
+  if [ -f "$INSTALL_DIR/.env" ]; then
+    existing_env=1
+    echo "检测到已有部署配置：$INSTALL_DIR/.env"
+    echo "默认会复用现有配置，避免覆盖 Postgres 密码和探针页 Token。"
+    printf '如需重写配置请输入 REWRITE，直接按 Enter 继续复用: '
+    read -r rewrite_confirm
+    if [ "$rewrite_confirm" = "REWRITE" ]; then
+      existing_env=0
+    fi
+  fi
+
   default_domain="${DOMAIN:-nodeget.example.com}"
+  if [ "$existing_env" -eq 1 ]; then
+    existing_domain="$(load_env_value DOMAIN)"
+    default_domain="${existing_domain:-$default_domain}"
+  fi
   domain="$(prompt '请输入域名' "$default_domain")"
-  site_name="$(prompt '请输入探针页名称' 'NodeGet Status')"
-  email="$(prompt '请输入 ACME 邮箱' "admin@${domain}")"
-  default_password="$(generate_password)"
-  postgres_password="$(prompt '请输入 Postgres 密码' "$default_password")"
 
-  check_domain_hint "$domain"
+  if [ "$existing_env" -eq 1 ]; then
+    existing_site_name="$(load_env_value STATUS_SITE_NAME)"
+    existing_email="$(load_env_value ACME_EMAIL)"
+    site_name="$(prompt '请输入探针页名称' "${existing_site_name:-NodeGet Status}")"
+    email="$(prompt '请输入 ACME 邮箱' "${existing_email:-admin@${domain}}")"
+    set_env_value DOMAIN "$domain"
+    set_env_value ACME_EMAIL "$email"
+    set_env_value STATUS_SITE_NAME "\"$site_name\""
+    set_env_value STATUS_BACKEND_URL "wss://${domain}/ws"
+    check_domain_hint "$domain"
+    ensure_repo
+  else
+    site_name="$(prompt '请输入探针页名称' 'NodeGet Status')"
+    email="$(prompt '请输入 ACME 邮箱' "admin@${domain}")"
+    default_password="$(generate_password)"
+    postgres_password="$(prompt '请输入 Postgres 密码' "$default_password")"
 
-  ensure_repo
-  write_env "$domain" "$site_name" "$email" "$postgres_password"
+    check_domain_hint "$domain"
+
+    ensure_repo
+    write_env "$domain" "$site_name" "$email" "$postgres_password"
+  fi
 
   cd "$INSTALL_DIR"
   ./scripts/render-status-config.sh
@@ -341,9 +393,14 @@ install_stack() {
     sleep 2
   done
 
-  token="$(get_super_token)"
-  if [ -n "$token" ]; then
-    create_probe_token "$token" || true
+  status_token="$(load_env_value STATUS_TOKEN)"
+  if [ -z "$status_token" ]; then
+    token="$(get_super_token)"
+    if [ -n "$token" ]; then
+      create_probe_token "$token" || true
+    fi
+  else
+    echo "检测到已有探针页 Token，跳过自动生成。如需更新请选择菜单 3。"
   fi
 
   show_next_steps "$domain"
