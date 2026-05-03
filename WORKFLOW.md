@@ -13,6 +13,7 @@
 - 2026-05-03 已在 Debian GNU/Linux 13 trixie VPS 上跑通，测试域名 `tz.aqa.cc`。
 - 最终自检结果：Docker、Docker Compose、Docker Buildx、DNS、`80/443`、Postgres healthcheck、Caddy、Server、Board、StatusShow 均正常。
 - 已验证接入一个 Agent 后，探针页可以显示数据。
+- 用户反馈本地构建前端镜像耗时过长，默认部署改为拉 GHCR 预构建镜像；`docker-compose.build.yml` 保留源码构建路径。
 - Debian 13/trixie 可能预装 `docker-buildx 0.13.1`，会和 Docker 官方 `docker-buildx-plugin` 冲突。安装脚本会移除旧包并安装官方插件。
 - Docker Compose v5 构建本地镜像要求 Buildx `0.17+`。
 - Cloudflare 橙云会让 Caddy ACME 校验打到 Cloudflare IP，首次部署建议先用“仅 DNS / 灰云”。
@@ -40,7 +41,7 @@
 
 ## 后续待改进
 
-- 尽量减少本地构建，评估是否发布预构建镜像。
+- 首次发布前需要确认 GitHub Actions 已成功推送 `ghcr.io/eeviriyi/nodeget-board:main` 和 `ghcr.io/eeviriyi/nodeget-statusshow:main`，并把包可见性设为 public。
 - 探针页 Token 创建应优先复用已有 `nodeget-probe-page-*` Token；当前无法从 API 取回 secret，只能重新创建。
 - 增加非交互安装参数，方便一条命令自动部署。
 - 支持用户选择是否启用 Cloudflare 代理场景下的 DNS-01 证书。

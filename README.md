@@ -8,7 +8,7 @@ NodeGet 单域名 Docker Compose 部署方案，目标是让个人 VPS 可以用
 - `/board/` 提供 NodeGet-board 控制台
 - `/ws` 反代 NodeGet Server WebSocket JSON-RPC
 
-本方案使用 Caddy 自动 HTTPS、Postgres 存储，以及官方 NodeGet Server 镜像。
+本方案使用 Caddy 自动 HTTPS、Postgres 存储、官方 NodeGet Server 镜像，以及预构建的 Board/StatusShow 镜像。
 
 ## 已实测环境
 
@@ -18,6 +18,7 @@ NodeGet 单域名 Docker Compose 部署方案，目标是让个人 VPS 可以用
 - Docker Buildx `v0.33.0`
 - 单域名 HTTPS：已验证 Caddy 自动签发 Let's Encrypt 证书
 - 已验证路径：`/`、`/board/`、`/ws`
+- 默认安装不在 VPS 上构建前端镜像，避免低配机器长时间卡在 `Building`
 
 ## 环境要求
 
@@ -100,6 +101,23 @@ POSTGRES_PASSWORD=change-this-password
 STATUS_BACKEND_URL=wss://nodeget.example.com/ws
 ```
 
+默认会拉取预构建前端镜像：
+
+```env
+BOARD_IMAGE=ghcr.io/eeviriyi/nodeget-board:main
+STATUSSHOW_IMAGE=ghcr.io/eeviriyi/nodeget-statusshow:main
+```
+
+如果需要在 VPS 上从源码构建 Board/StatusShow，额外设置：
+
+```env
+NODEGET_BUILD_FRONTENDS=1
+BOARD_REPO=https://github.com/eeviriyi/NodeGet-board.git
+BOARD_REF=main
+STATUSSHOW_REPO=https://github.com/eeviriyi/NodeGet-StatusShow.git
+STATUSSHOW_REF=main
+```
+
 如果需要重新渲染探针页配置：
 
 ```bash
@@ -133,7 +151,8 @@ Caddy 会自动申请和续期 Let's Encrypt 证书。域名必须已经解析�
 - NodeGet Server：`genshinmc/nodeget:latest`
 - Postgres：`postgres:17-alpine`
 - Caddy：`caddy:2-alpine`
-- Board 和 StatusShow 会从配置的 Git 仓库构建镜像
+- Board：`ghcr.io/eeviriyi/nodeget-board:main`
+- StatusShow：`ghcr.io/eeviriyi/nodeget-statusshow:main`
 
 生产环境建议在 `.env` 中固定版本，不要长期使用 `latest`。
 
@@ -144,6 +163,12 @@ docker compose ps
 docker compose logs -f nodeget-server
 docker compose logs -f caddy
 docker compose pull
-docker compose up -d --build
+docker compose up -d
 ./scripts/doctor.sh
+```
+
+本地构建前端镜像：
+
+```bash
+NODEGET_BUILD_FRONTENDS=1 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```

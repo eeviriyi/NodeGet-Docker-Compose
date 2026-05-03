@@ -54,22 +54,13 @@ services:
       - nodeget-data:/var/lib/nodeget
 
   nodeget-statusshow:
-    build:
-      context: ./statusshow
-      args:
-        STATUSSHOW_REPO: ${STATUSSHOW_REPO:-https://github.com/eeviriyi/NodeGet-StatusShow.git}
-        STATUSSHOW_REF: ${STATUSSHOW_REF:-main}
+    image: ${STATUSSHOW_IMAGE:-ghcr.io/eeviriyi/nodeget-statusshow:main}
     restart: unless-stopped
     volumes:
       - ./statusshow/config.json:/usr/share/nginx/html/config.json:ro
 
   nodeget-board:
-    build:
-      context: ./board
-      args:
-        BOARD_REPO: ${BOARD_REPO:-https://github.com/eeviriyi/NodeGet-board.git}
-        BOARD_REF: ${BOARD_REF:-main}
-        BOARD_BASE: /board/
+    image: ${BOARD_IMAGE:-ghcr.io/eeviriyi/nodeget-board:main}
     restart: unless-stopped
 
 volumes:

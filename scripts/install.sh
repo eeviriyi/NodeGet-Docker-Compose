@@ -70,6 +70,14 @@ compose_cmd() {
   fi
 }
 
+compose_up() {
+  if [ "${NODEGET_BUILD_FRONTENDS:-0}" = "1" ]; then
+    compose_cmd -f docker-compose.yml -f docker-compose.build.yml up -d --build
+  else
+    compose_cmd up -d
+  fi
+}
+
 check_command() {
   name="$1"
   hint="$2"
@@ -284,6 +292,9 @@ BOARD_REPO=https://github.com/eeviriyi/NodeGet-board.git
 BOARD_REF=main
 STATUSSHOW_REPO=https://github.com/eeviriyi/NodeGet-StatusShow.git
 STATUSSHOW_REF=main
+BOARD_IMAGE=ghcr.io/eeviriyi/nodeget-board:main
+STATUSSHOW_IMAGE=ghcr.io/eeviriyi/nodeget-statusshow:main
+NODEGET_BUILD_FRONTENDS=0
 
 STATUS_SITE_NAME="${site_name}"
 STATUS_SITE_LOGO=
@@ -381,7 +392,7 @@ install_stack() {
 
   cd "$INSTALL_DIR"
   ./scripts/render-status-config.sh
-  compose_cmd up -d --build
+  compose_up
 
   echo "正在等待 nodeget-server 输出日志..."
   i=0
@@ -550,7 +561,7 @@ update_stack() {
   git pull --ff-only
   ./scripts/render-status-config.sh
   compose_cmd pull
-  compose_cmd up -d --build
+  compose_up
 }
 
 restart_stack() {
@@ -560,7 +571,7 @@ restart_stack() {
   fi
   cd "$INSTALL_DIR"
   ./scripts/render-status-config.sh
-  compose_cmd up -d --build
+  compose_up
 }
 
 show_status() {
