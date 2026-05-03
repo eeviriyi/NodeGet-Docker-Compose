@@ -32,6 +32,22 @@ fail() {
   printf '[FAIL] %s\n' "$1"
 }
 
+buildx_ok() {
+  if ! docker buildx version >/dev/null 2>&1; then
+    return 1
+  fi
+  version="$(docker buildx version | awk '{print $2}' | sed 's/^v//')"
+  major="$(printf '%s' "$version" | cut -d. -f1)"
+  minor="$(printf '%s' "$version" | cut -d. -f2)"
+  case "$major:$minor" in
+    ''|*[!0-9:]*|*:|'':*) return 1 ;;
+  esac
+  if [ "$major" -gt 0 ]; then
+    return 0
+  fi
+  [ "$minor" -ge 17 ]
+}
+
 check_command() {
   if command -v "$1" >/dev/null 2>&1; then
     ok "已安装 $1"
@@ -47,10 +63,10 @@ else
   fail "Docker Compose 不可用"
 fi
 
-if docker buildx version >/dev/null 2>&1; then
+if buildx_ok; then
   ok "Docker Buildx 可用：$(docker buildx version)"
 else
-  fail "Docker Buildx 不可用，构建 board/statusshow 镜像会失败"
+  fail "Docker Buildx 不可用或版本低于 0.17，构建 board/statusshow 镜像会失败"
 fi
 
 if docker info >/dev/null 2>&1; then

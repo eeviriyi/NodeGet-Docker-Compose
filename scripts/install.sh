@@ -72,10 +72,47 @@ check_command() {
   fi
 }
 
+buildx_ok() {
+  if ! docker buildx version >/dev/null 2>&1; then
+    return 1
+  fi
+
+  version="$(docker buildx version | awk '{print $2}' | sed 's/^v//')"
+  major="$(printf '%s' "$version" | cut -d. -f1)"
+  minor="$(printf '%s' "$version" | cut -d. -f2)"
+  case "$major:$minor" in
+    ''|*[!0-9:]*|*:|'':*) return 1 ;;
+  esac
+
+  if [ "$major" -gt 0 ]; then
+    return 0
+  fi
+  [ "$minor" -ge 17 ]
+}
+
+install_docker_plugins() {
+  if ! command -v apt-get >/dev/null 2>&1; then
+    return 0
+  fi
+
+  run_as_root apt-get update
+
+  if dpkg -s docker-buildx >/dev/null 2>&1 && ! dpkg -s docker-buildx-plugin >/dev/null 2>&1; then
+    echo "检测到 Debian 自带 docker-buildx 旧包，正在移除以安装 Docker 官方 Buildx 插件。"
+    run_as_root apt-get remove -y docker-buildx
+  fi
+
+  if ! run_as_root apt-get install -y docker-compose-plugin docker-buildx-plugin; then
+    echo "Docker 插件安装失败，尝试移除冲突的 docker-buildx 后重试。"
+    run_as_root apt-get remove -y docker-buildx || true
+    run_as_root apt-get install -y docker-compose-plugin docker-buildx-plugin
+  fi
+}
+
 install_docker() {
   if command -v docker >/dev/null 2>&1 &&
     docker compose version >/dev/null 2>&1 &&
-    docker buildx version >/dev/null 2>&1; then
+    buildx_ok; then
     echo "Docker、Docker Compose 和 Buildx 已安装。"
     return
   fi
@@ -101,10 +138,7 @@ install_docker() {
 
   run_as_root sh -c 'curl -fsSL https://get.docker.com | sh'
 
-  if command -v apt-get >/dev/null 2>&1; then
-    run_as_root apt-get update
-    run_as_root apt-get install -y docker-compose-plugin docker-buildx-plugin
-  fi
+  install_docker_plugins
 
   if [ "$(id -u)" -ne 0 ]; then
     run_as_root usermod -aG docker "$(id -un)" || true
@@ -166,10 +200,10 @@ check_docker() {
     }
   fi
 
-  if ! docker buildx version >/dev/null 2>&1; then
-    echo "未检测到 Docker Buildx。"
+  if ! buildx_ok; then
+    echo "未检测到可用的 Docker Buildx 0.17+。"
     install_docker || {
-      echo "请先安装 Docker Buildx 插件。"
+      echo "请先安装 Docker Buildx 0.17+ 插件。"
       exit 1
     }
   fi
