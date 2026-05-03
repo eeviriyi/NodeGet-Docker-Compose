@@ -31,9 +31,9 @@ prompt() {
   label="$1"
   default="${2:-}"
   if [ -n "$default" ]; then
-    printf '%s [%s]: ' "$label" "$default"
+    printf '%s [%s]: ' "$label" "$default" >&2
   else
-    printf '%s: ' "$label"
+    printf '%s: ' "$label" >&2
   fi
   read -r value
   if [ -z "$value" ]; then
