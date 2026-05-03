@@ -364,6 +364,15 @@ get_super_token() {
   compose_cmd logs nodeget-server 2>/dev/null | grep 'Super Token:' | tail -1 | sed 's/.*Super Token: //' || true
 }
 
+fix_token_sequence() {
+  cd "$INSTALL_DIR"
+  compose_cmd exec -T postgres psql \
+    -U "${POSTGRES_USER:-nodeget}" \
+    -d "${POSTGRES_DB:-nodeget}" \
+    -c "SELECT setval(pg_get_serial_sequence('token', 'id'), COALESCE((SELECT MAX(id) FROM token), 1));" \
+    >/dev/null 2>&1 || true
+}
+
 create_probe_token() {
   super_token="$1"
   if [ -z "$super_token" ]; then
@@ -372,6 +381,7 @@ create_probe_token() {
   fi
 
   echo "正在自动创建探针页专用只读 Token..."
+  fix_token_sequence
 
   created_token="$(
     docker run --rm -i \
