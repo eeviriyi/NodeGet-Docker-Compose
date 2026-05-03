@@ -10,6 +10,15 @@ NodeGet 单域名 Docker Compose 部署方案，目标是让个人 VPS 可以用
 
 本方案使用 Caddy 自动 HTTPS、Postgres 存储，以及官方 NodeGet Server 镜像。
 
+## 已实测环境
+
+- Debian GNU/Linux 13 trixie
+- Docker `29.4.2`
+- Docker Compose `v5.1.3`
+- Docker Buildx `v0.33.0`
+- 单域名 HTTPS：已验证 Caddy 自动签发 Let's Encrypt 证书
+- 已验证路径：`/`、`/board/`、`/ws`
+
 ## 环境要求
 
 - 已安装 Docker 和 Docker Compose
@@ -67,6 +76,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Comp
 cd /opt/nodeget-compose
 ./scripts/doctor.sh
 ```
+
+自检通过后应看到 Docker、Compose、Buildx、DNS、`80/443` 和容器状态均为 OK。
 
 ## 手动启动
 

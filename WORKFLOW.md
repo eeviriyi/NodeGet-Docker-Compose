@@ -10,6 +10,9 @@
 
 ## VPS 测试经验
 
+- 2026-05-03 已在 Debian GNU/Linux 13 trixie VPS 上跑通，测试域名 `tz.aqa.cc`。
+- 最终自检结果：Docker、Docker Compose、Docker Buildx、DNS、`80/443`、Postgres healthcheck、Caddy、Server、Board、StatusShow 均正常。
+- 已验证接入一个 Agent 后，探针页可以显示数据。
 - Debian 13/trixie 可能预装 `docker-buildx 0.13.1`，会和 Docker 官方 `docker-buildx-plugin` 冲突。安装脚本会移除旧包并安装官方插件。
 - Docker Compose v5 构建本地镜像要求 Buildx `0.17+`。
 - Cloudflare 橙云会让 Caddy ACME 校验打到 Cloudflare IP，首次部署建议先用“仅 DNS / 灰云”。
