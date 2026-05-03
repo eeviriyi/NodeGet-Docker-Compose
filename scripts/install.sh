@@ -62,7 +62,19 @@ compose_cmd() {
   fi
 }
 
+check_command() {
+  name="$1"
+  hint="$2"
+  if ! command -v "$name" >/dev/null 2>&1; then
+    echo "未检测到 ${name}。"
+    echo "$hint"
+    exit 1
+  fi
+}
+
 check_docker() {
+  check_command git "请先安装 git，例如：apt install -y git"
+
   if ! command -v docker >/dev/null 2>&1; then
     echo "未检测到 Docker。"
     echo "请先安装 Docker：https://docs.docker.com/engine/install/"
@@ -88,6 +100,19 @@ check_ports() {
       echo "警告：端口 $port 似乎已被占用。Caddy 默认需要 80 和 443。"
     fi
   done
+}
+
+check_domain_hint() {
+  domain="$1"
+  if command -v getent >/dev/null 2>&1; then
+    resolved="$(getent ahosts "$domain" | awk '{print $1}' | sort -u | tr '\n' ' ')"
+    if [ -n "$resolved" ]; then
+      echo "域名解析结果：${resolved}"
+    else
+      echo "警告：当前服务器暂时解析不到 ${domain}。"
+      echo "如果 DNS 还没生效，Caddy 可能暂时无法签发 HTTPS 证书。"
+    fi
+  fi
 }
 
 ensure_repo() {
@@ -174,6 +199,8 @@ install_stack() {
   email="$(prompt '请输入 ACME 邮箱' "admin@${domain}")"
   default_password="$(generate_password)"
   postgres_password="$(prompt '请输入 Postgres 密码' "$default_password")"
+
+  check_domain_hint "$domain"
 
   ensure_repo
   write_env "$domain" "$site_name" "$email" "$postgres_password"
@@ -337,6 +364,16 @@ update_stack() {
   compose_cmd up -d --build
 }
 
+restart_stack() {
+  if [ ! -d "$INSTALL_DIR" ]; then
+    echo "未在 $INSTALL_DIR 找到已安装的部署。"
+    return
+  fi
+  cd "$INSTALL_DIR"
+  ./scripts/render-status-config.sh
+  compose_cmd up -d --build
+}
+
 show_status() {
   if [ ! -d "$INSTALL_DIR" ]; then
     echo "未在 $INSTALL_DIR 找到已安装的部署。"
@@ -344,6 +381,15 @@ show_status() {
   fi
   cd "$INSTALL_DIR"
   compose_cmd ps
+}
+
+doctor_stack() {
+  if [ ! -d "$INSTALL_DIR" ]; then
+    echo "未在 $INSTALL_DIR 找到已安装的部署。"
+    return
+  fi
+  cd "$INSTALL_DIR"
+  ./scripts/doctor.sh
 }
 
 show_super_token() {
@@ -408,10 +454,12 @@ menu() {
     echo "1. 安装 / 首次部署"
     echo "2. 自动生成/更新探针页访问 Token"
     echo "3. 更新部署"
-    echo "4. 查看状态"
-    echo "5. 查看 SuperToken"
-    echo "6. 查看日志"
-    echo "7. 卸载"
+    echo "4. 重新生成配置并重启"
+    echo "5. 查看状态"
+    echo "6. 部署自检"
+    echo "7. 查看 SuperToken"
+    echo "8. 查看日志"
+    echo "9. 卸载"
     echo "0. 退出"
     echo
     printf '请选择: '
@@ -420,10 +468,12 @@ menu() {
       1) install_stack; pause ;;
       2) configure_status_token; pause ;;
       3) update_stack; pause ;;
-      4) show_status; pause ;;
-      5) show_super_token; pause ;;
-      6) show_logs ;;
-      7) uninstall_stack; pause ;;
+      4) restart_stack; pause ;;
+      5) show_status; pause ;;
+      6) doctor_stack; pause ;;
+      7) show_super_token; pause ;;
+      8) show_logs ;;
+      9) uninstall_stack; pause ;;
       0) exit 0 ;;
       *) echo "无效选择" ;;
     esac

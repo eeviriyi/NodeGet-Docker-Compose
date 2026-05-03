@@ -1,6 +1,6 @@
 # NodeGet Docker Compose
 
-NodeGet 单域名 Docker Compose 部署方案。
+NodeGet 单域名 Docker Compose 部署方案，目标是让个人 VPS 可以用一条脚本启动 Server、Board 和探针页。
 
 路由：
 
@@ -16,7 +16,15 @@ NodeGet 单域名 Docker Compose 部署方案。
 - 一个已经解析到本服务器的域名
 - 服务器开放入站 `80` 和 `443` 端口
 
-## 快速开始
+## VPS 测试流程
+
+先准备一台干净 VPS：
+
+- 已安装 Docker 和 Docker Compose 插件
+- 域名已经添加 `A` 记录指向 VPS IPv4
+- 防火墙/安全组放行 `80` 和 `443`
+
+在 VPS 上运行：
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Compose/main/scripts/install.sh)
@@ -41,6 +49,22 @@ bash <(curl -fsSL https://raw.githubusercontent.com/eeviriyi/NodeGet-Docker-Comp
 
 然后打开 `https://你的域名/` 查看探针页。
 
+测试时常用菜单：
+
+- `2. 自动生成/更新探针页访问 Token`
+- `4. 重新生成配置并重启`
+- `5. 查看状态`
+- `6. 部署自检`
+- `7. 查看 SuperToken`
+- `8. 查看日志`
+
+也可以在安装目录手动自检：
+
+```bash
+cd /opt/nodeget-compose
+./scripts/doctor.sh
+```
+
 ## 手动启动
 
 如果不想使用菜单安装器，也可以手动启动：
@@ -62,6 +86,13 @@ POSTGRES_PASSWORD=change-this-password
 STATUS_BACKEND_URL=wss://nodeget.example.com/ws
 ```
 
+如果需要重新渲染探针页配置：
+
+```bash
+./scripts/render-status-config.sh
+docker compose restart nodeget-statusshow
+```
+
 ## DNS 解析
 
 在你的 DNS 服务商处添加 `A` 记录：
@@ -75,6 +106,13 @@ nodeget.example.com -> your server IPv4
 ## HTTPS
 
 Caddy 会自动申请和续期 Let's Encrypt 证书。域名必须已经解析到本服务器，并且公网可以访问服务器的 `80` 和 `443` 端口。
+
+如果第一次访问 HTTPS 失败，优先检查：
+
+- DNS 是否已经解析到 VPS
+- VPS 安全组是否放行 `80/443`
+- VPS 内是否已有 nginx/apache/caddy 占用端口
+- `docker compose logs -f caddy` 里的 ACME 错误
 
 ## 镜像来源
 
@@ -93,4 +131,5 @@ docker compose logs -f nodeget-server
 docker compose logs -f caddy
 docker compose pull
 docker compose up -d --build
+./scripts/doctor.sh
 ```
