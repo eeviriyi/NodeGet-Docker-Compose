@@ -19,6 +19,7 @@ NodeGet 单域名 Docker Compose 部署方案，目标是让个人 VPS 可以用
 - 单域名 HTTPS：已验证 Caddy 自动签发 Let's Encrypt 证书
 - 已验证路径：`/`、`/board/`、`/ws`
 - 默认安装不在 VPS 上构建前端镜像，避免低配机器长时间卡在 `Building`
+- 预构建前端镜像发布 `linux/amd64` 和 `linux/arm64`
 
 ## 环境要求
 
@@ -153,6 +154,8 @@ Caddy 会自动申请和续期 Let's Encrypt 证书。域名必须已经解析�
 - Caddy：`caddy:2-alpine`
 - Board：`ghcr.io/eeviriyi/nodeget-board:main`
 - StatusShow：`ghcr.io/eeviriyi/nodeget-statusshow:main`
+
+Board 和 StatusShow 镜像支持 `linux/amd64` 与 `linux/arm64`。
 
 生产环境建议在 `.env` 中固定版本，不要长期使用 `latest`。
 
