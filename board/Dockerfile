@@ -2,12 +2,15 @@ FROM node:22-alpine AS build
 
 ARG BOARD_REPO=https://github.com/eeviriyi/NodeGet-board.git
 ARG BOARD_REF=main
+ARG BOARD_SOURCE_REV=unknown
 ARG BOARD_BASE=/board/
 ENV VITE_BASE=${BOARD_BASE}
 
 RUN apk add --no-cache git
 WORKDIR /src
-RUN git clone --depth 1 --branch "${BOARD_REF}" "${BOARD_REPO}" .
+RUN echo "Board source revision: ${BOARD_SOURCE_REV}" \
+    && git clone --depth 1 --branch "${BOARD_REF}" "${BOARD_REPO}" . \
+    && if [ "${BOARD_SOURCE_REV}" != "unknown" ]; then test "$(git rev-parse HEAD)" = "${BOARD_SOURCE_REV}"; fi
 
 # NodeGet-board does not currently expose a base-path build option. Patch the
 # build in this deployment image so it can be served from /board/.

@@ -290,7 +290,7 @@ POSTGRES_PASSWORD=${postgres_password}
 
 BOARD_REPO=https://github.com/eeviriyi/NodeGet-board.git
 BOARD_REF=main
-STATUSSHOW_REPO=https://github.com/eeviriyi/NodeGet-StatusShow.git
+STATUSSHOW_REPO=https://github.com/NodeSeekDev/NodeGet-StatusShow.git
 STATUSSHOW_REF=main
 BOARD_IMAGE=ghcr.io/eeviriyi/nodeget-board:main
 STATUSSHOW_IMAGE=ghcr.io/eeviriyi/nodeget-statusshow:main

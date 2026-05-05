@@ -6,11 +6,17 @@ on:
       - main
     tags:
       - "v*"
+  schedule:
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
+
+concurrency:
+  group: frontend-images-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -20,8 +26,18 @@ jobs:
         include:
           - name: nodeget-board
             context: ./board
+            source_repo: https://github.com/eeviriyi/NodeGet-board.git
+            source_ref: main
+            repo_arg: BOARD_REPO
+            ref_arg: BOARD_REF
+            source_rev_arg: BOARD_SOURCE_REV
           - name: nodeget-statusshow
             context: ./statusshow
+            source_repo: https://github.com/NodeSeekDev/NodeGet-StatusShow.git
+            source_ref: main
+            repo_arg: STATUSSHOW_REPO
+            ref_arg: STATUSSHOW_REF
+            source_rev_arg: STATUSSHOW_SOURCE_REV
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -49,6 +65,17 @@ jobs:
             type=ref,event=tag
             type=sha,prefix=sha-
 
+      - name: Resolve frontend source
+        id: source
+        run: |
+          rev="$(git ls-remote "${{ matrix.source_repo }}" "refs/heads/${{ matrix.source_ref }}" | awk '{print $1}')"
+          if [ -z "$rev" ]; then
+            echo "Unable to resolve ${{ matrix.source_repo }} ${{ matrix.source_ref }}" >&2
+            exit 1
+          fi
+          echo "rev=$rev" >> "$GITHUB_OUTPUT"
+          echo "${{ matrix.name }} source: $rev"
+
       - name: Build and push
         uses: docker/build-push-action@v7.1.0
         with:
@@ -57,5 +84,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ${{ matrix.repo_arg }}=${{ matrix.source_repo }}
+            ${{ matrix.ref_arg }}=${{ matrix.source_ref }}
+            ${{ matrix.source_rev_arg }}=${{ steps.source.outputs.rev }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
