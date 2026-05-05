@@ -1,6 +1,6 @@
 FROM node:22-alpine AS build
 
-ARG BOARD_REPO=https://github.com/eeviriyi/NodeGet-board.git
+ARG BOARD_REPO=https://github.com/NodeSeekDev/NodeGet-board.git
 ARG BOARD_REF=main
 ARG BOARD_SOURCE_REV=unknown
 ARG BOARD_BASE=/board/

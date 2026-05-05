@@ -10,6 +10,6 @@ services:
     build:
       context: ./board
       args:
-        BOARD_REPO: ${BOARD_REPO:-https://github.com/eeviriyi/NodeGet-board.git}
+        BOARD_REPO: ${BOARD_REPO:-https://github.com/NodeSeekDev/NodeGet-board.git}
         BOARD_REF: ${BOARD_REF:-main}
         BOARD_BASE: /board/

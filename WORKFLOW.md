@@ -15,7 +15,7 @@
 - 已验证接入一个 Agent 后，探针页可以显示数据。
 - 用户反馈本地构建前端镜像耗时过长，默认部署改为拉 GHCR 预构建镜像；`docker-compose.build.yml` 保留源码构建路径。
 - 用户反馈 ARM VPS 拉取 `nodeget-board` 报 `no matching manifest for linux/arm64/v8`，GHCR workflow 已改为发布 `linux/amd64,linux/arm64`。
-- StatusShow 预构建镜像默认从官方 `NodeSeekDev/NodeGet-StatusShow` 构建，不再从个人 fork 构建，避免上游发布后还需要先同步 fork。
+- Board 和 StatusShow 预构建镜像默认从官方 `NodeSeekDev` 源仓库构建，不再从个人 fork 构建，避免上游发布后还需要先同步 fork。
 - Debian 13/trixie 可能预装 `docker-buildx 0.13.1`，会和 Docker 官方 `docker-buildx-plugin` 冲突。安装脚本会移除旧包并安装官方插件。
 - Docker Compose v5 构建本地镜像要求 Buildx `0.17+`。
 - Cloudflare 橙云会让 Caddy ACME 校验打到 Cloudflare IP，首次部署建议先用“仅 DNS / 灰云”。

@@ -113,7 +113,7 @@ STATUSSHOW_IMAGE=ghcr.io/eeviriyi/nodeget-statusshow:main
 
 ```env
 NODEGET_BUILD_FRONTENDS=1
-BOARD_REPO=https://github.com/eeviriyi/NodeGet-board.git
+BOARD_REPO=https://github.com/NodeSeekDev/NodeGet-board.git
 BOARD_REF=main
 STATUSSHOW_REPO=https://github.com/NodeSeekDev/NodeGet-StatusShow.git
 STATUSSHOW_REF=main
@@ -157,7 +157,7 @@ Caddy 会自动申请和续期 Let's Encrypt 证书。域名必须已经解析�
 
 Board 和 StatusShow 镜像支持 `linux/amd64` 与 `linux/arm64`。
 
-StatusShow 镜像默认从官方 `NodeSeekDev/NodeGet-StatusShow` 构建；Board 镜像默认从本仓库维护的 `eeviriyi/NodeGet-board` 构建。
+Board 和 StatusShow 镜像默认都从官方 `NodeSeekDev` 源仓库构建。
 
 生产环境建议在 `.env` 中固定版本，不要长期使用 `latest`。
 
