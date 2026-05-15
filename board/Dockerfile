@@ -4,6 +4,7 @@ ARG BOARD_REPO=https://github.com/NodeSeekDev/NodeGet-board.git
 ARG BOARD_REF=main
 ARG BOARD_SOURCE_REV=unknown
 ARG BOARD_BASE=/board/
+ARG PNPM_VERSION=10.33.0
 ENV VITE_BASE=${BOARD_BASE}
 
 RUN apk add --no-cache git
@@ -17,7 +18,7 @@ RUN echo "Board source revision: ${BOARD_SOURCE_REV}" \
 RUN node -e "const fs=require('fs');const p='vite.config.ts';let s=fs.readFileSync(p,'utf8');s=s.replace('export default defineConfig({', 'export default defineConfig({\\n  base: process.env.VITE_BASE || ' + JSON.stringify(process.env.VITE_BASE || '/board/') + ',');fs.writeFileSync(p,s)" \
     && node -e "const fs=require('fs');const p='src/router/index.ts';let s=fs.readFileSync(p,'utf8');s=s.replace('history: createWebHashHistory(),', 'history: createWebHashHistory(import.meta.env.BASE_URL),');fs.writeFileSync(p,s)"
 
-RUN corepack enable
+RUN corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
