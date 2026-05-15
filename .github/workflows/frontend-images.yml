@@ -89,4 +89,4 @@ jobs:
             ${{ matrix.ref_arg }}=${{ matrix.source_ref }}
             ${{ matrix.source_rev_arg }}=${{ steps.source.outputs.rev }}
           cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }},ignore-error=true
